@@ -86,6 +86,8 @@ function App() {
   };
 
   const handleDeleteTask = (id) => {
+    setStatus({ loading: true, error: null, message: 'Deleting task...' });
+    
     axios.delete(`${API_URL}/tasks/${id}`)
       .then(() => {
         setTasksId(tasks.filter(task => task._id !== id));
@@ -94,8 +96,19 @@ function App() {
           delete newState[id];
           return newState;
         });
+        setStatus({ loading: false, error: null, message: 'Task deleted successfully!' });
       })
-      .catch(error => console.error('Error deleting task:', error));
+      .catch(error => {
+        console.error('Error deleting task:', error);
+        console.error('Error details:', error.response ? error.response.data : 'No response data');
+        
+        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+        setStatus({ 
+          loading: false, 
+          error: true, 
+          message: `Failed to delete task: ${errorMessage}` 
+        });
+      });
   };
 
   const handleEditTask = (id, currentTitle) => {
@@ -105,14 +118,31 @@ function App() {
 
   const handleSaveEdit = (id) => {
     if (!editText.trim()) return;
+    
+    setStatus({ loading: true, error: null, message: 'Updating task...' });
+    
+    // Find the current task to preserve its completed status
+    const currentTask = tasks.find(task => task._id === id);
+    const completed = currentTask ? currentTask.completed : false;
 
-    axios.put(`${API_URL}/tasks/${id}`, { title: editText })
+    axios.put(`${API_URL}/tasks/${id}`, { title: editText, completed })
       .then(response => {
         setTasksId(tasks.map(task => task._id === id ? response.data : task));
         setEditTaskId(null);
         setEditText('');
+        setStatus({ loading: false, error: null, message: 'Task updated successfully!' });
       })
-      .catch(error => console.error('Error updating task:', error));
+      .catch(error => {
+        console.error('Error updating task:', error);
+        console.error('Error details:', error.response ? error.response.data : 'No response data');
+        
+        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+        setStatus({ 
+          loading: false, 
+          error: true, 
+          message: `Failed to update task: ${errorMessage}` 
+        });
+      });
   };
 
   const handleCancelEdit = () => {
@@ -121,10 +151,47 @@ function App() {
   };
 
   const handleToggleStrike = (id) => {
+    // Find the current task
+    const currentTask = tasks.find(task => task._id === id);
+    if (!currentTask) return;
+    
+    // Toggle the completed status in the UI immediately for better UX
     setStrikedTasks(prev => ({
       ...prev,
       [id]: !prev[id],
     }));
+    
+    // Update the completed status in the database
+    const updatedCompleted = !currentTask.completed;
+    
+    setStatus({ loading: true, error: null, message: 'Updating task status...' });
+    
+    axios.put(`${API_URL}/tasks/${id}`, { 
+      title: currentTask.title, 
+      completed: updatedCompleted 
+    })
+      .then(response => {
+        // Update the task in the state with the response from the server
+        setTasksId(tasks.map(task => task._id === id ? response.data : task));
+        setStatus({ loading: false, error: null, message: `Task marked as ${updatedCompleted ? 'completed' : 'incomplete'}` });
+      })
+      .catch(error => {
+        console.error('Error updating task status:', error);
+        console.error('Error details:', error.response ? error.response.data : 'No response data');
+        
+        // Revert the UI change if the API call fails
+        setStrikedTasks(prev => ({
+          ...prev,
+          [id]: currentTask.completed,
+        }));
+        
+        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+        setStatus({ 
+          loading: false, 
+          error: true, 
+          message: `Failed to update task status: ${errorMessage}` 
+        });
+      });
   };
 
   return (
