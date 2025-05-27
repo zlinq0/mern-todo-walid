@@ -149,9 +149,14 @@ if (process.env.NODE_ENV === 'production') {
   // Serve static files
   app.use(express.static(path.join(__dirname, '../client/build')));
   
-  // For any route that is not an API route, serve the React app
-  app.get('*', (req, res) => {
-    console.log(`Serving index.html for path: ${req.path}`);
+  // Specific routes for the React app instead of catch-all
+  app.get('/', (req, res) => {
+    console.log('Serving index.html for root path');
+    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+  });
+  
+  app.get('/index.html', (req, res) => {
+    console.log('Serving index.html directly');
     res.sendFile(path.join(__dirname, '../client/build/index.html'));
   });
 } else {
