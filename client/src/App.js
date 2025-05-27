@@ -4,7 +4,7 @@ import './App.css';
 import { FaCheck, FaEdit, FaPlus, FaStrikethrough } from 'react-icons/fa';
 
 // Use environment variable or default to the deployed URL
-const API_URL = process.env.REACT_APP_API_URL || 'https://todoprojects-2aqw.onrender.com/api';
+const API_URL = process.env.REACT_APP_API_URL || 'https://mern-todo-walid.onrender.com/api';
 
 function App() {
   const [tasks, setTasksId] = useState([]);
