@@ -27,20 +27,38 @@ function App() {
   const formattedTime = currentTime.toLocaleTimeString();
 
   useEffect(() => {
+    console.log('Fetching tasks from:', `${API_URL}/tasks`);
     axios.get(`${API_URL}/tasks`)
-      .then(response => setTasksId(response.data))
-      .catch(error => console.error('Error fetching tasks:', error));
+      .then(response => {
+        console.log('Tasks received:', response.data);
+        setTasksId(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching tasks:', error);
+        console.error('Error details:', error.response ? error.response.data : 'No response data');
+      });
+      
+    // Test the API connection
+    axios.get(`${API_URL}/test`)
+      .then(response => console.log('API test successful:', response.data))
+      .catch(error => console.error('API test failed:', error));
   }, []);
 
   const handleAddTask = () => {
     if (!newTask.trim()) return;
-
+    
+    console.log('Adding new task:', newTask);
     axios.post(`${API_URL}/tasks`, { title: newTask, completed: false })
       .then(response => {
+        console.log('Task added successfully:', response.data);
         setTasksId([...tasks, response.data]);
         setNewTask('');
       })
-      .catch(error => console.error('Error adding task:', error));
+      .catch(error => {
+        console.error('Error adding task:', error);
+        console.error('Error details:', error.response ? error.response.data : 'No response data');
+        alert('Failed to add task. Please check console for details.');
+      });
   };
 
   const handleDeleteTask = (id) => {
