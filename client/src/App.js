@@ -11,6 +11,7 @@ function App() {
   const [newTask, setNewTask] = useState('');
   const [editTaskId, setEditTaskId] = useState(null);
   const [editText, setEditText] = useState('');
+  const [status, setStatus] = useState({ loading: false, error: null, message: '' });
   const today = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
   const formattedDate = today.toLocaleDateString(undefined, options);
@@ -27,37 +28,56 @@ function App() {
   const formattedTime = currentTime.toLocaleTimeString();
 
   useEffect(() => {
+    setStatus({ loading: true, error: null, message: 'Loading tasks...' });
     console.log('Fetching tasks from:', `${API_URL}/tasks`);
-    axios.get(`${API_URL}/tasks`)
+    
+    // Test the API connection first
+    axios.get(`${API_URL}/test`)
+      .then(response => {
+        console.log('API test successful:', response.data);
+        
+        // Now fetch tasks
+        return axios.get(`${API_URL}/tasks`);
+      })
       .then(response => {
         console.log('Tasks received:', response.data);
         setTasksId(response.data);
+        setStatus({ loading: false, error: null, message: 'Tasks loaded successfully' });
       })
       .catch(error => {
-        console.error('Error fetching tasks:', error);
+        console.error('Error:', error);
         console.error('Error details:', error.response ? error.response.data : 'No response data');
+        setStatus({ 
+          loading: false, 
+          error: true, 
+          message: `Failed to load tasks: ${error.message}. ${error.response?.data?.message || ''}` 
+        });
       });
-      
-    // Test the API connection
-    axios.get(`${API_URL}/test`)
-      .then(response => console.log('API test successful:', response.data))
-      .catch(error => console.error('API test failed:', error));
   }, []);
 
   const handleAddTask = () => {
     if (!newTask.trim()) return;
     
+    setStatus({ loading: true, error: null, message: 'Adding task...' });
     console.log('Adding new task:', newTask);
+    
     axios.post(`${API_URL}/tasks`, { title: newTask, completed: false })
       .then(response => {
         console.log('Task added successfully:', response.data);
         setTasksId([...tasks, response.data]);
         setNewTask('');
+        setStatus({ loading: false, error: null, message: 'Task added successfully!' });
       })
       .catch(error => {
         console.error('Error adding task:', error);
         console.error('Error details:', error.response ? error.response.data : 'No response data');
-        alert('Failed to add task. Please check console for details.');
+        
+        const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+        setStatus({ 
+          loading: false, 
+          error: true, 
+          message: `Failed to add task: ${errorMessage}` 
+        });
       });
   };
 
@@ -110,6 +130,13 @@ function App() {
         <p className="date-display">{formattedDate}</p>
         <p className="time-display">{formattedTime}</p>
       </div>
+      
+      {/* Status message display */}
+      {status.message && (
+        <div className={`status-message ${status.error ? 'error' : status.loading ? 'loading' : 'success'}`}>
+          {status.message}
+        </div>
+      )}
 
       <div className="input-container no-print">
         <input

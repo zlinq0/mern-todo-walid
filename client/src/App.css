@@ -2,7 +2,34 @@
 
 body {
   background: #34aad9;
-background: linear-gradient(90deg,rgba(52, 170, 217, 1) 57%, rgb(59, 246, 230) 86%);
+  background: linear-gradient(90deg,rgba(52, 170, 217, 1) 57%, rgb(59, 246, 230) 86%);
+}
+
+/* Status message styles */
+.status-message {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.status-message.error {
+  background-color: #ffdddd;
+  color: #ff0000;
+  border: 1px solid #ff0000;
+}
+
+.status-message.success {
+  background-color: #ddffdd;
+  color: #008800;
+  border: 1px solid #008800;
+}
+
+.status-message.loading {
+  background-color: #ffffdd;
+  color: #888800;
+  border: 1px solid #888800;
 }
 .date-time-container {
   display: flex;

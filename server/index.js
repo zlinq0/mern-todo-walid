@@ -85,17 +85,32 @@ app.post('/api/tasks', async (req, res) => {
   }
   
   try {
+    // Check MongoDB connection
+    if (mongoose.connection.readyState !== 1) {
+      console.error('MongoDB not connected. Current state:', mongoose.connection.readyState);
+      return res.status(500).json({ message: 'Database connection not established' });
+    }
+    
+    // Create task document
     const task = new Task({
       title: req.body.title,
       completed: req.body.completed || false
     });
     
+    console.log('Attempting to save task to database...');
     const newTask = await task.save();
     console.log('Task created successfully:', JSON.stringify(newTask));
     return res.status(201).json(newTask);
   } catch (err) {
     console.error('Error creating task:', err);
-    return res.status(400).json({ message: err.message, stack: err.stack });
+    // Provide more detailed error information
+    return res.status(400).json({ 
+      message: err.message, 
+      stack: err.stack,
+      code: err.code,
+      name: err.name,
+      details: 'Failed to save task to database'
+    });
   }
 });
 
