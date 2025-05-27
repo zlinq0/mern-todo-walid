@@ -19,20 +19,15 @@ mongoose.connect(uri, {
   .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
+// Welcome Route (only in development)
+app.get('/', (req, res) => {
+  res.send('Welcome to the To-Do API');
+});
+
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
   const path = require('path');
   app.use(express.static(path.join(__dirname, '../client/build')));
-
-  // Handle any requests that don't match the ones above
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
-  });
-} else {
-  // Welcome Route (only in development)
-  app.get('/', (req, res) => {
-    res.send('Welcome to the To-Do API');
-  });
 }
 
 // To-Do Schema
@@ -86,6 +81,15 @@ app.delete('/api/tasks/:id', async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+// Add this catch-all route AFTER all other routes
+if (process.env.NODE_ENV === 'production') {
+  const path = require('path');
+  // Handle any requests that don't match the ones above
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+  });
+}
 
 // Start server
 app.listen(PORT, () => {
