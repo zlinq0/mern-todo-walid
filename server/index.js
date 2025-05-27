@@ -1,97 +1,103 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
+
+// MongoDB connection string
 const uri = "mongodb+srv://admin1:admin@cluster0.fvhpy7b.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
+// Initialize Express app
 const app = express();
-const PORT = 5000; // Ensure this matches your frontend's API requests
+const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Apply middleware
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-mongoose.set('strictQuery', false); // To avoid deprecation warnings in Mongoose 7
-mongoose.connect(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
-
-// Welcome Route (only in development)
-app.get('/', (req, res) => {
-  res.send('Welcome to the To-Do API');
-});
-
-// Serve static files from the React app in production
-if (process.env.NODE_ENV === 'production') {
-  const path = require('path');
-  app.use(express.static(path.join(__dirname, '../client/build')));
-}
-
-// To-Do Schema
-const todoSchema = new mongoose.Schema({
-  title: String,
+// Define Task schema
+const taskSchema = new mongoose.Schema({
+  title: { type: String, required: true },
   completed: { type: Boolean, default: false }
 });
 
-const Todo = mongoose.model('Task', todoSchema);
+// Create Task model (or use existing one)
+const Task = mongoose.models.Task || mongoose.model('Task', taskSchema);
 
-// Get all todos
+// Connect to MongoDB
+mongoose.connect(uri)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// API Routes
+// Get all tasks
 app.get('/api/tasks', async (req, res) => {
   try {
-    const todos = await Todo.find();
-    res.json(todos);
+    const tasks = await Task.find();
+    res.json(tasks);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Add a new todo
+// Create a new task
 app.post('/api/tasks', async (req, res) => {
-  const newTodo = new Todo({
-    title: req.body.title,
-    completed: req.body.completed || false,
-  });
   try {
-    const savedTodo = await newTodo.save();
-    res.status(201).json(savedTodo);
+    const task = new Task({
+      title: req.body.title,
+      completed: req.body.completed || false
+    });
+    const newTask = await task.save();
+    res.status(201).json(newTask);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-// Update a todo
+// Update a task
 app.put('/api/tasks/:id', async (req, res) => {
   try {
-    const updatedTodo = await Todo.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updatedTodo);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
-// Delete a todo
-app.delete('/api/tasks/:id', async (req, res) => {
-  try {
-    await Todo.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Todo deleted' });
+    const id = req.params.id;
+    const updatedTask = await Task.findByIdAndUpdate(
+      id,
+      { title: req.body.title, completed: req.body.completed },
+      { new: true }
+    );
+    
+    if (!updatedTask) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    
+    res.json(updatedTask);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Add this catch-all route AFTER all other routes
+// Delete a task
+app.delete('/api/tasks/:id', async (req, res) => {
+  try {
+    const result = await Task.findByIdAndDelete(req.params.id);
+    if (!result) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+    res.json({ message: 'Task deleted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Serve static files in production
 if (process.env.NODE_ENV === 'production') {
-  const path = require('path');
-  // Handle any requests that don't match the ones above
-  app.get('*', (req, res) => {
+  // Serve static files
+  app.use(express.static(path.join(__dirname, '../client/build')));
+  
+  // For any route that is not an API route, serve the React app
+  app.get(/^\/(?!api).*/, (req, res) => {
     res.sendFile(path.join(__dirname, '../client/build/index.html'));
   });
 }
 
-// Start server
+// Start the server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
