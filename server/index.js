@@ -108,11 +108,12 @@ if (process.env.NODE_ENV === 'production') {
   // Serve static files
   app.use(express.static(path.join(__dirname, '../client/build')));
   
-  // Serve index.html for all routes except API routes
-  app.get('*', (req, res, next) => {
-    if (req.url.startsWith('/api/')) {
-      return next();
-    }
+  // Serve index.html for specific routes
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+  });
+  
+  app.get('/index.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/build/index.html'));
   });
 } else {
